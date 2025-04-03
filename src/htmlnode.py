@@ -19,7 +19,8 @@ class HTMLNode:
 
     def props_to_html(self):
         if self.props:
-            return f' href="{self.props["href"]}" target="{self.props["target"]}"'
+            props = [f'{key}="{val}"' for key,val in self.props.items()]
+            return f' {" ".join(props)}'
         else:
             return ""
 
@@ -46,7 +47,7 @@ class LeafNode(HTMLNode):
         super().__init__(tag, value, None, props)
 
     def to_html(self):
-        if not self.value:
+        if self.value is None:
             raise ValueError("Missing value")
         if not self.tag:
             return self.value
