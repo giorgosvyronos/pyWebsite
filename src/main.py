@@ -1,4 +1,5 @@
 import os,shutil
+from generate import generate_page
 
 def copy_dir(parent_path=".",new_parent="."):
     for item in os.listdir(f"{parent_path}"):
@@ -26,4 +27,9 @@ def copy_static_to_public():
 
     copy_dir("./static/", "./public/")
 
-copy_static_to_public()
+def main():
+    copy_static_to_public()
+    generate_page("content/index.md","template.html","public/index.html")
+
+if __name__ == "__main__":
+    main()

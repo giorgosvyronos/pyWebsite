@@ -86,5 +86,3 @@ def markdown_to_html_node(markdown:str) -> HTMLNode:
             elif block_type == BlockType.ordered_list:
                 total_html_nodes.append(ordered_to_html(block))
     return ParentNode("div",total_html_nodes)
-            
-

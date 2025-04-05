@@ -58,6 +58,11 @@ def split_nodes_delimiter(
                 new_nodes.append(TextNode(item, text_type))
     return new_nodes
 
+def extract_title(markdown:str) -> str:
+    split_md = markdown.split("\n")
+    if not split_md[0].startswith("# "):
+        raise Exception(f"Cannot find md title in {markdown}")
+    return split_md[0].replace("# ",'')
 
 def extract_markdown_images(text: str):
     """

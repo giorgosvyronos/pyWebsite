@@ -3,6 +3,7 @@ import unittest
 from helpers import (
     extract_markdown_images,
     extract_markdown_links,
+    extract_title,
     markdown_to_blocks,
     split_nodes_delimiter,
     split_nodes_image,
@@ -99,6 +100,23 @@ class TestHelpers(unittest.TestCase):
         new_nodes = split_nodes_delimiter([node], "*", TextType.ITALIC)
         result = [TextNode("This is a _italic block_", TextType.TEXT)]
         self.assertEqual(new_nodes, result)
+
+    def test_extract_title(self):
+        md = "# Hello"
+        title = extract_title(md)
+        self.assertEqual(title,"Hello")
+
+    def test_extract_no_title(self):
+        md = "Hello"
+        with self.assertRaises(Exception) as e:
+            _ = extract_title(md)
+            self.assertEqual(e.msg,"Cannot find md title in Hello")
+
+    def test_extract_broken_title(self):
+        md = "### Hello"
+        with self.assertRaises(Exception) as e:
+            _ = extract_title(md)
+            self.assertEqual(e.msg,"Cannot find md title in ### Hello")
 
     def test_regex_image(self):
         text = "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
