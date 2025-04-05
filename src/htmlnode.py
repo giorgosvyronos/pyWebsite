@@ -6,7 +6,7 @@ class HTMLNode:
         self,
         tag: Optional[str] = None,
         value: Optional[str] = None,
-        children: Optional[list[object]] = None,
+        children: Optional[list['HTMLNode']] = None,
         props: Optional[dict[str, str]] = None,
     ) -> None:
         self.tag = tag
@@ -30,6 +30,8 @@ class HTMLNode:
         )
 
     def __eq__(self, obj: object) -> bool:
+        if not isinstance(obj, HTMLNode):
+            return False
         return (
             True
             if (self.tag == obj.tag)
@@ -55,13 +57,13 @@ class LeafNode(HTMLNode):
         return f"<{self.tag}{self.props_to_html()}>{self.value}</{self.tag}>"
 
 class ParentNode(HTMLNode):
-    def __init__(self, tag: str, children: list[object], props: Optional[dict[str, str]] = None) -> None:
+    def __init__(self, tag: str, children: list[HTMLNode], props: Optional[dict[str, str]] = None) -> None:
         super().__init__(tag, None, children, props)
 
     def to_html(self):
-        if not self.tag:
+        if self.tag is None:
             raise ValueError("Missing tag")
-        if not self.children:
+        if self.children is None:
             raise ValueError("Missing children")
         
         return f'<{self.tag}{self.props_to_html()}>{"".join([a.to_html() for a in self.children])}</{self.tag}>'

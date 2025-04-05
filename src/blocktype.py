@@ -1,4 +1,7 @@
 from enum import Enum
+from helpers import markdown_to_blocks, text_node_to_html_node, text_to_textnodes
+from htmlnode import HTMLNode, LeafNode, ParentNode
+from textnode import TextNode, TextType
 
 class BlockType(Enum):
     paragraph = "paragraph"
@@ -9,18 +12,79 @@ class BlockType(Enum):
     ordered_list = "ordered_list"
 
 
-def block_to_block_type(md:str):
-    if 0 < md.split('\n')[0].count("#") < 7:
+def block_to_block_type(block):
+    lines = block.split("\n")
+
+    if block.startswith(("# ", "## ", "### ", "#### ", "##### ", "###### ")):
         return BlockType.heading
-    elif md.split('\n')[0][:3]=="```" and md.split('\n')[-1][:3]=="```":
+    if len(lines) > 1 and lines[0].startswith("```") and lines[-1].startswith("```"):
         return BlockType.code
-    elif all(x[0]==">" for x in md.split('\n')):
+    if block.startswith(">"):
+        for line in lines:
+            if not line.startswith(">"):
+                return BlockType.paragraph
         return BlockType.quote
-    elif all(x[:2]=="- " for x in md.split('\n')):
+    if block.startswith("- "):
+        for line in lines:
+            if not line.startswith("- "):
+                return BlockType.paragraph
         return BlockType.unordered_list
-    elif all(i[0].isdigit() and i[1]=="." for i in [x[:2] for x in md.split('\n')]):
-        ordered = [int(x[0]) for x in md.split('\n')]
-        if list(range(1,len(ordered)+1)) == [int(x[0]) for x in md.split('\n')]:
-            return BlockType.ordered_list
+    if block.startswith("1. "):
+        i = 1
+        for line in lines:
+            if not line.startswith(f"{i}. "):
+                return BlockType.paragraph
+            i += 1
+        return BlockType.ordered_list
     return BlockType.paragraph
+
+def text_to_children(text:str) -> HTMLNode:
+    new_text = text.replace("\n"," ")
+    text_nodes = text_to_textnodes(new_text)
+    leaf_nodes = list(map(text_node_to_html_node,text_nodes))
+    return ParentNode("p",leaf_nodes)
+
+def heading_to_html(text:str) -> HTMLNode:
+    tag = f"h{text.split()[0].count('#')}"
+    value = " ".join(text.split()[1:])
+    return LeafNode(tag=tag,value=value)
+
+def code_to_html(text:str) -> HTMLNode:
+    inline_code = text[3:-3].lstrip()
+    child = LeafNode("code",inline_code)
+    return ParentNode("pre",children=[child])
+
+def quote_to_html(text:str) -> HTMLNode:
+    new_text = text.replace(">","")
+    return LeafNode("blockquote",new_text)
+
+def unordered_to_html(text:str) -> HTMLNode:
+    children = [LeafNode("li",item[2:]) for item in text.split("\n")]
+    parent = ParentNode("ul",children)
+    return parent
+
+def ordered_to_html(text:str) -> HTMLNode:
+    children = [LeafNode("li",item[2:]) for item in text.split("\n")]
+    return ParentNode("ol",children)
+
+def markdown_to_html_node(markdown:str) -> HTMLNode:
+    total_html_nodes = []
+    blocks = markdown_to_blocks(markdown)
+    for block in blocks:
+        if block:
+            block_type = block_to_block_type(block)
+            if block_type == BlockType.paragraph:
+                total_html_nodes.append(text_to_children(block))
+            if block_type == BlockType.heading:
+                total_html_nodes.append(heading_to_html(block))
+            elif block_type == BlockType.code:
+                total_html_nodes.append(code_to_html(block))
+            elif block_type == BlockType.quote:
+                total_html_nodes.append(quote_to_html(block))
+            elif block_type == BlockType.unordered_list:
+                total_html_nodes.append(unordered_to_html(block))
+            elif block_type == BlockType.ordered_list:
+                total_html_nodes.append(ordered_to_html(block))
+    return ParentNode("div",total_html_nodes)
+            
 
