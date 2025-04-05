@@ -136,3 +136,10 @@ def text_to_textnodes(text: str) -> list[TextNode]:
             for item in extracted_code
             ]
     return flat(extracted_italic)
+
+def markdown_to_blocks(markdown:str)->list[str]:
+    blocks = markdown.split("\n\n")
+    blocks = list(map(lambda x: x.strip(), blocks))
+    cleaned_text_list = ['\n'.join([line.strip() for line in part.split('\n')]) for part in blocks]
+    return cleaned_text_list
+
