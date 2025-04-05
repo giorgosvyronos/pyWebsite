@@ -1,6 +1,14 @@
 import unittest
 
-from helpers import split_nodes_delimiter, text_node_to_html_node
+from helpers import (
+    extract_markdown_images,
+    extract_markdown_links,
+    split_nodes_delimiter,
+    split_nodes_image,
+    split_nodes_link,
+    text_node_to_html_node,
+    text_to_textnodes,
+)
 from textnode import TextNode, TextType
 
 
@@ -38,20 +46,24 @@ class TestHelpers(unittest.TestCase):
         self.assertEqual(html_node.to_html(), "<code>This is a text node</code>")
 
     def test_link(self):
-        node = TextNode("This is a text node", TextType.LINK,url="www.example.com")
+        node = TextNode("This is a text node", TextType.LINK, url="www.example.com")
         html_node = text_node_to_html_node(node)
         self.assertEqual(html_node.tag, "a")
         self.assertEqual(html_node.value, "This is a text node")
         self.assertEqual(html_node.props, {"href": node.url})
-        self.assertEqual(html_node.to_html(), f'<a href="{node.url}">This is a text node</a>')
+        self.assertEqual(
+            html_node.to_html(), f'<a href="{node.url}">This is a text node</a>'
+        )
 
     def test_image(self):
         node = TextNode("Example Website", TextType.IMAGE, "www.example.com")
         html_node = text_node_to_html_node(node)
         self.assertEqual(html_node.tag, "img")
         self.assertEqual(html_node.value, "")
-        self.assertEqual(html_node.props, {"src":node.url,"alt":node.text})
-        self.assertEqual(html_node.to_html(), f'<img src="{node.url}" alt="{node.text}"></img>')
+        self.assertEqual(html_node.props, {"src": node.url, "alt": node.text})
+        self.assertEqual(
+            html_node.to_html(), f'<img src="{node.url}" alt="{node.text}"></img>'
+        )
 
     def test_delimiter_1(self):
         node = TextNode("This is text with a `code block` word", TextType.TEXT)
@@ -61,7 +73,7 @@ class TestHelpers(unittest.TestCase):
             TextNode("code block", TextType.CODE),
             TextNode(" word", TextType.TEXT),
         ]
-        self.assertEqual(new_nodes,result)
+        self.assertEqual(new_nodes, result)
 
     def test_delimiter_2(self):
         node = TextNode("*bold block* word", TextType.TEXT)
@@ -70,7 +82,7 @@ class TestHelpers(unittest.TestCase):
             TextNode("bold block", TextType.BOLD),
             TextNode(" word", TextType.TEXT),
         ]
-        self.assertEqual(new_nodes,result)
+        self.assertEqual(new_nodes, result)
 
     def test_delimiter_3(self):
         node = TextNode("This is a _italic block_", TextType.TEXT)
@@ -79,12 +91,93 @@ class TestHelpers(unittest.TestCase):
             TextNode("This is a ", TextType.TEXT),
             TextNode("italic block", TextType.ITALIC),
         ]
-        self.assertEqual(new_nodes,result)
+        self.assertEqual(new_nodes, result)
 
     def test_delimiter_4(self):
         node = TextNode("This is a _italic block_", TextType.TEXT)
         new_nodes = split_nodes_delimiter([node], "*", TextType.ITALIC)
-        result = [
-            TextNode("This is a _italic block_", TextType.TEXT)
+        result = [TextNode("This is a _italic block_", TextType.TEXT)]
+        self.assertEqual(new_nodes, result)
+
+    def test_regex_image(self):
+        text = "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
+        expected = [
+            ("rick roll", "https://i.imgur.com/aKaOqIh.gif"),
+            ("obi wan", "https://i.imgur.com/fJRm4Vk.jpeg"),
         ]
-        self.assertEqual(new_nodes,result)
+        self.assertEqual(extract_markdown_images(text), expected)
+
+    def test_regex_links(self):
+        text = "This is text with a link [to boot dev](https://www.boot.dev) and [to youtube](https://www.youtube.com/@bootdotdev)"
+        expected = [
+            ("to boot dev", "https://www.boot.dev"),
+            ("to youtube", "https://www.youtube.com/@bootdotdev"),
+        ]
+        self.assertEqual(extract_markdown_links(text), expected)
+
+    def test_extract_markdown_links(self):
+        matches = extract_markdown_links(
+            "This is text with an [link](https://example.com)"
+        )
+        self.assertListEqual([("link", "https://example.com")], matches)
+
+    def test_extract_markdown_images(self):
+        matches = extract_markdown_images(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png)"
+        )
+        self.assertListEqual([("image", "https://i.imgur.com/zjjcJKZ.png")], matches)
+
+    def test_split_images(self):
+        node = TextNode(
+            "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_image([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and another ", TextType.TEXT),
+                TextNode(
+                    "second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"
+                ),
+            ],
+            new_nodes,
+        )
+
+    def test_split_links(self):
+        node = TextNode(
+            "This is text with an [image](https://i.imgur.com/zjjcJKZ.png) and another [second image](https://i.imgur.com/3elNhQu.png)",
+            TextType.TEXT,
+        )
+        new_nodes = split_nodes_link([node])
+        self.assertListEqual(
+            [
+                TextNode("This is text with an ", TextType.TEXT),
+                TextNode("image", TextType.LINK, "https://i.imgur.com/zjjcJKZ.png"),
+                TextNode(" and another ", TextType.TEXT),
+                TextNode(
+                    "second image", TextType.LINK, "https://i.imgur.com/3elNhQu.png"
+                ),
+            ],
+            new_nodes,
+        )
+
+    def test_text_to_nodes(self):
+        test = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        res = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.TEXT),
+            TextNode(
+                "obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"
+            ),
+            TextNode(" and a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+
+        self.assertEqual(text_to_textnodes(test), res)
