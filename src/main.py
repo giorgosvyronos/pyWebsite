@@ -1,5 +1,5 @@
 import os,shutil
-from generate import generate_page
+from generate import generate_page, generate_pages_recursive
 
 def copy_dir(parent_path=".",new_parent="."):
     for item in os.listdir(f"{parent_path}"):
@@ -8,7 +8,6 @@ def copy_dir(parent_path=".",new_parent="."):
             copy_dir(f"{parent_path}/{item}",f"{new_parent}/{item}")
         else:
             shutil.copy(f"{parent_path}/{item}",f"{new_parent}/{item}")
-            return
 
 
 def copy_static_to_public():
@@ -29,7 +28,7 @@ def copy_static_to_public():
 
 def main():
     copy_static_to_public()
-    generate_page("content/index.md","template.html","public/index.html")
+    generate_pages_recursive("content","template.html","public")
 
 if __name__ == "__main__":
     main()
