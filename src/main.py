@@ -19,10 +19,10 @@ def copy_files_recursive(source_dir_path, dest_dir_path):
 
 
 def main():
-    dir_path_static = "static"
-    dir_path_public = "docs"
-    dir_path_content = "content"
-    template_path = "template.html"
+    dir_path_static = "./static"
+    dir_path_public = "./docs"
+    dir_path_content = "./content"
+    template_path = "./template.html"
 
     if len(sys.argv) == 1:
 
