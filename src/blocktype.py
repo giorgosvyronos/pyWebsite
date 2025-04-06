@@ -55,17 +55,20 @@ def code_to_html(text:str) -> HTMLNode:
     return ParentNode("pre",children=[child])
 
 def quote_to_html(text:str) -> HTMLNode:
-    new_text = text.replace(">","")
+    new_text = text.replace(">","").strip()
     return LeafNode("blockquote",new_text)
 
 def unordered_to_html(text:str) -> HTMLNode:
-    children = [LeafNode("li",item[2:]) for item in text.split("\n")]
-    parent = ParentNode("ul",children)
-    return parent
+    text_nodes = [text_to_textnodes(item[2:]) for item in text.split("\n")]
+    leaf_nodes = [list(map(text_node_to_html_node,nodes)) for nodes in text_nodes]
+    parent_nodes = [ParentNode("li",children=items) for items in leaf_nodes]
+    return ParentNode("ul",parent_nodes)
 
 def ordered_to_html(text:str) -> HTMLNode:
-    children = [LeafNode("li",item[2:]) for item in text.split("\n")]
-    return ParentNode("ol",children)
+    text_nodes = [text_to_textnodes(item[3:]) for item in text.split("\n")]
+    leaf_nodes = [list(map(text_node_to_html_node,nodes)) for nodes in text_nodes]
+    parent_nodes = [ParentNode("li",children=items) for items in leaf_nodes]
+    return ParentNode("ol",parent_nodes)
 
 def markdown_to_html_node(markdown:str) -> HTMLNode:
     total_html_nodes = []
