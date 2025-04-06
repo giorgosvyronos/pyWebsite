@@ -1,33 +1,49 @@
-import os,shutil,sys
+import os, shutil, sys
 from generate import generate_pages_recursive
 
-def copy_dir(parent_path=".",new_parent="."):
-    for item in os.listdir(f"{parent_path}"):
-        if not os.path.isfile(f"{parent_path}/{item}"):
-            os.mkdir(f"{new_parent}/{item}")
-            copy_dir(f"{parent_path}/{item}",f"{new_parent}/{item}")
+
+def copy_files_recursive(source_dir_path, dest_dir_path):
+    if not os.path.exists(dest_dir_path):
+        os.mkdir(dest_dir_path)
+
+    for filename in os.listdir(source_dir_path):
+        from_path = os.path.join(source_dir_path, filename)
+        dest_path = os.path.join(dest_dir_path, filename)
+        print(f" * {from_path} -> {dest_path}")
+        if os.path.isfile(from_path):
+            shutil.copy(from_path, dest_path)
         else:
-            shutil.copy(f"{parent_path}/{item}",f"{new_parent}/{item}")
+            copy_files_recursive(from_path, dest_path)
+
+
 
 
 def main():
+    dir_path_static = "static"
+    dir_path_public = "docs"
+    dir_path_content = "content"
+    template_path = "template.html"
 
-    if os.path.isfile("docs"):
-        os.remove("docs")
+    if len(sys.argv) == 1:
 
-    if os.path.exists("docs"):
-        try:
-            shutil.rmtree("docs")
-        except Exception as e:
-            raise Exception(f"Encountered error while trying to remove docs/ : {e}")
-    os.makedirs("docs")
-    
-    if len(sys.argv)==1:
-        copy_dir("static", "docs")
-        generate_pages_recursive("content","template.html","docs")
+        print("Deleting public directory...")
+        if os.path.exists(dir_path_public):
+            shutil.rmtree(dir_path_public)
+
+        print("Copying static files to public directory...")
+        copy_files_recursive(dir_path_static, dir_path_public)
+
+        print("Generating content...")
+        generate_pages_recursive(dir_path_content, template_path, dir_path_public)
     else:
-        copy_dir(f"{sys.argv[1]}/static", f"{sys.argv[1]}/docs")
-        generate_pages_recursive(f"{sys.argv[1]}/content",f"{sys.argv[1]}/template.html",f"{sys.argv[1]}/docs",f"{sys.argv[1]}")
+        base_path = sys.argv[1]
+        generate_pages_recursive(
+                dir_path_content,
+                template_path,
+                dir_path_public,
+                base_path
+                )
+
 
 if __name__ == "__main__":
     main()
